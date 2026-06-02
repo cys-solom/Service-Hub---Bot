@@ -38,6 +38,45 @@ async def call_api(api_config: dict, user_input: str, order_number: str, qty: in
             client_secret = api_config.get("client_secret", ""),
         )
 
+    # ── Canboso API ──────────────────────────────────
+    if provider == "canboso":
+        from bot_services.canboso_api import purchase_product, CanbosoAPIError
+        product_code = api_config.get("provider_product_code")
+        if not product_code:
+            return {"success": False, "error": "Product code not configured for Canboso API."}
+            
+        try:
+            res = await purchase_product(
+                product_id=product_code,
+                quantity=qty,
+                customer_email=user_input,
+                slot_months=api_config.get("slot_months"),
+            )
+            delivered = res.get("deliveredAccounts") or []
+            if delivered:
+                msg_parts = []
+                for idx, acc in enumerate(delivered, 1):
+                    part = f"🔑 <b>Account #{idx}</b>:\n"
+                    part += f"👤 Email: <code>{acc.get('user')}</code>\n"
+                    part += f"🔒 Password: <code>{acc.get('password')}</code>"
+                    if acc.get("verifyEmail"):
+                        part += f"\n📧 Recovery: <code>{acc.get('verifyEmail')}</code>"
+                    msg_parts.append(part)
+                message_text = "\n\n".join(msg_parts)
+            else:
+                message_text = f"✅ Purchase successful! Order Code: {res.get('orderCode')}"
+                
+            return {
+                "success": True,
+                "message": message_text,
+                "data": res,
+                "error": None
+            }
+        except CanbosoAPIError as e:
+            return {"success": False, "error": f"Canboso API error: {e.message}"}
+        except Exception as e:
+            return {"success": False, "error": f"Purchase error: {str(e)}"}
+
     # ── Generic HTTP API ──────────────────────────────
     url = api_config.get("url", "").strip()
     if not url:

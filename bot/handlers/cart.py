@@ -948,6 +948,7 @@ async def _api_deliver(callback: CallbackQuery, session: AsyncSession, order, pr
     meta       = product.meta or {}
     # Merge top-level meta + nested api_config so credentials work either way
     api_config = {**meta, **(meta.get("api_config") or {})}
+    api_config["provider_product_code"] = product.provider_product_code
     ddata      = order.delivery_data or {}
     emails     = ddata.get("emails") or ([ddata["input_email"]] if ddata.get("input_email") else [])
     email_display = emails[0] if len(emails) == 1 else f"{len(emails)} emails"
