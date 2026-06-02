@@ -1,6 +1,8 @@
 # Environment
 .env
+.env.vercel
 !.env.example
+
 
 # Python
 __pycache__/
