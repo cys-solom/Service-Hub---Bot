@@ -1,0 +1,8 @@
+📋 <b>ORDER SUMMARY</b>
+
+🆔 Order ID: <b>{order_number}</b>
+🛍 Product: {emoji} {product_name}
+🔢 Quantity: {qty}
+💲 Total USD: <b>${total_usd}</b>
+
+💳 Choose a payment method below:

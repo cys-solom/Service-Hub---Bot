@@ -1,0 +1,15 @@
+💎 <b>CRYPTO PAYMENT</b>
+
+🆔 Order ID: <b>{order_number}</b>
+
+📋 Wallet Address:
+<code>{wallet_address}</code>
+
+💲 Amount:
+<code>${amount} USDT</code>
+
+📝 Note:
+<code>{order_number}</code>
+
+⚠️ Send <b>exactly</b> the amount above.
+⏰ Order expires in <b>{timeout} minutes</b>.

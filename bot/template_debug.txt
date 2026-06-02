@@ -1,0 +1,6 @@
+<tg-emoji emoji-id="6242498410822244114">🎁</tg-emoji> <b>PRODUCT</b>
+
+{emoji} <b>{product_name}</b>
+<tg-emoji emoji-id="5271628569754222702">📃</tg-emoji> Description: {description}
+
+<tg-emoji emoji-id="5963259797812811231">💲&l…

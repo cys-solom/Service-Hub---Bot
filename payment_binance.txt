@@ -1,0 +1,20 @@
+💫 <b>BINANCE INTERNAL TRANSFER</b>
+
+🆔 Order ID: <b>{order_number}</b>
+💫 Binance UID:
+<code>{wallet_address}</code>
+
+📝 Note:
+<code>{order_number}</code>
+
+💲 Amount:
+<code>${amount} USDT</code>
+
+📋 <b>Instructions:</b>
+1. Open Binance → Send to Binance users (Send via UID)
+2. Enter the recipient UID: <code>{wallet_address}</code>
+3. Enter amount: <code>${amount} USDT</code>
+4. Enter note: <code>{order_number}</code>
+
+⚠️ You <b>MUST</b> enter the exact <b>NOTE</b> above for auto-confirmation!
+⏰ Order expires in <b>{timeout} minutes</b>.

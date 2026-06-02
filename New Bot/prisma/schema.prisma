@@ -1,0 +1,213 @@
+// prisma/schema.prisma
+// Service Hub MVP — Serverless Digital Products Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── CATEGORIES ────────────────────────────────────
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products Product[]
+
+  @@map("categories")
+}
+
+// ─── PRODUCTS ──────────────────────────────────────
+
+model Product {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description    String?
+  imageUrl       String?
+  price          Decimal  @db.Decimal(10, 2)
+  compareAtPrice Decimal? @db.Decimal(10, 2)
+  categoryId     String
+  sortOrder      Int      @default(0)
+  isVisible      Boolean  @default(true)
+  isOutOfStock   Boolean  @default(false)
+  deliveryMode   String   @default("api") // "api" | "manual"
+  minQty         Int      @default(1)
+  maxQty         Int      @default(10)
+
+  // Provider linkage (API products)
+  providerId          String?
+  providerProductCode String?
+
+  // Flexible config: api_config, reply_template, emoji, delivery notes
+  meta Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category   Category    @relation(fields: [categoryId], references: [id])
+  provider   Provider?   @relation(fields: [providerId], references: [id])
+  stockItems StockItem[]
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+// ─── STOCK (manual products only) ──────────────────
+
+model StockItem {
+  id        String   @id @default(cuid())
+  productId String
+  data      String // The deliverable (code, key, credentials)
+  isSold    Boolean  @default(false)
+  orderId   String?
+  batchId   String?
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  @@index([productId, isSold])
+  @@map("stock_items")
+}
+
+// ─── ORDERS ────────────────────────────────────────
+
+model Order {
+  id          String   @id @default(cuid())
+  orderNumber String   @unique
+  status      String   @default("pending")
+  // Lifecycle: pending → paid → processing → delivered
+  //                                        → failed (admin can retry)
+  //            pending → expired (cron)
+  //            pending → canceled (user)
+
+  totalAmount Decimal @db.Decimal(10, 2)
+  currency    String  @default("USD")
+
+  // Guest identity (no login)
+  customerTgId  String?
+  customerName  String?
+  customerEmail String?
+
+  // Delivery
+  deliveryData  Json?
+  deliveryInput Json?
+
+  notes     String?
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items      OrderItem[]
+  payments   Payment[]
+  stockItems StockItem[]
+
+  @@index([status])
+  @@index([customerTgId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String  @id @default(cuid())
+  orderId       String
+  productId     String
+  quantity      Int     @default(1)
+  unitPrice     Decimal @db.Decimal(10, 2)
+  totalPrice    Decimal @db.Decimal(10, 2)
+  status        String  @default("pending") // pending | delivered | failed
+  deliveredData String?
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// ─── EXTERNAL PROVIDERS ────────────────────────────
+
+model Provider {
+  id     String @id @default(cuid())
+  name   String
+  code   String @unique
+  apiUrl String
+
+  // NOTE: No apiKey/apiSecret columns.
+  // Provider credentials are stored in environment variables:
+  //   PROVIDER_<CODE>_API_KEY, PROVIDER_<CODE>_API_SECRET
+  // The `code` field is used to look up the matching env var at runtime.
+
+  isEnabled  Boolean   @default(true)
+  config     Json? // Non-secret config: custom headers, extra endpoints, etc.
+  lastSyncAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  products Product[]
+
+  @@map("providers")
+}
+
+// ─── PAYMENTS ──────────────────────────────────────
+
+model Payment {
+  id         String  @id @default(cuid())
+  orderId    String
+  method     String // "stripe" (Phase 1 only)
+  amount     Decimal @db.Decimal(10, 2)
+  currency   String  @default("USD")
+  status     String  @default("pending") // pending | confirmed | failed | expired
+  externalId String? // Stripe Checkout Session ID
+
+  webhookData Json? // Raw webhook payload for audit
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([externalId])
+  @@map("payments")
+}
+
+// ─── APP SETTINGS (non-secret business config only) ─
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  // Allowed keys (enforced in application code):
+  //   store_name, default_currency, payment_timeout_minutes,
+  //   support_whatsapp_url, support_telegram_username,
+  //   store_description, announcement_text
+  //
+  // NEVER stored here: bot tokens, API secrets, Stripe keys,
+  //   session secrets, or any credential.
+
+  @@map("settings")
+}
+
+// ─── ADMIN USERS ───────────────────────────────────
+
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@map("admins")
+}
